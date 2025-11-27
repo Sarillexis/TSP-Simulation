@@ -51,38 +51,44 @@ class Individual {
     if (Math.random() < crossProb) {
       let childChromosomes = [];
       while (childChromosomes.length < 2) {
-        let idx1 = Math.floor(Math.random() * this.chromosome.length);
-        while (idx1 >= this.chromosome.length - 1) {
-          idx1 = Math.floor(Math.random() * this.chromosome.length);
+        // For first child: segment from this, fill from otherInd
+        // For second child: segment from otherInd, fill from this
+        const donor  = (childChromosomes.length === 0) ? this    : otherInd;
+        const filler = (childChromosomes.length === 0) ? otherInd : this;
+
+        const len = donor.chromosome.length;
+
+        // pick a segment [idx1, idx2)
+        let idx1 = Math.floor(Math.random() * len);
+        while (idx1 >= len - 1) {
+          idx1 = Math.floor(Math.random() * len);
         }
-        let idx2 = idx1 + Math.ceil(Math.random() * (this.chromosome.length - idx1));
-        // let segment = this.chromosome.slice(idx1, idx2);
-        // console.log('transplanted segment: ', segment)
-        // console.log(idx1, idx2)
-        let childChromosome = new Array(this.chromosome.length)
-        // inserts random segment of this parent into child at same indices
-        for (let i = idx1; i < idx2; i ++) {
-          childChromosome[i] = this.chromosome[i];
+        let idx2 = idx1 + Math.ceil(Math.random() * (len - idx1));
+
+        let childChromosome = new Array(len);
+
+        // copy donor segment into child
+        for (let i = idx1; i < idx2; i++) {
+          childChromosome[i] = donor.chromosome[i];
         }
-        // re-arranges parent 2 to make filling child chromosome easier
+
+        // reorder filler parent to make filling easier
         let reorderedSecondParent = [];
-        for (let i = 0; i < this.chromosome.length; i++) {
-          reorderedSecondParent[i] = otherInd.chromosome[(idx2+i) % this.chromosome.length];
+        for (let i = 0; i < len; i++) {
+          reorderedSecondParent[i] =
+            filler.chromosome[(idx2 + i) % len];
         }
-        // console.log('childChrom before completion: ', childChromosome)
+
+        // fill remaining positions with genes from filler, in order, skipping duplicates
         let childIdx = idx2;
         reorderedSecondParent.forEach(gene => {
           if (!childChromosome.some(ele => JSON.stringify(ele) === JSON.stringify(gene))) {
-            childChromosome[childIdx % this.chromosome.length] = gene;
+            childChromosome[childIdx % len] = gene;
             childIdx += 1;
-            // console.log(childChromosome)
-          } 
-        })
-        // console.log('parent2 original: ', otherInd.chromosome)
-        // console.log('parent2 reordered: ', reorderedSecondParent)
-        // console.log('childChromosome: ', childChromosome)
-        childChromosomes.push(childChromosome)
-        childChromosome = [];
+          }
+        });
+
+        childChromosomes.push(childChromosome);
       }
       // console.log('child chromosome 1: ', childChromosomes[0])
       // console.log('child chromosome 2: ', childChromosomes[1])
