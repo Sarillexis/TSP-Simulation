@@ -54,7 +54,7 @@ export const evolutionLoop = (ctx, fittestCtx, population) => {
   drawPoints(ctx, currentGenFittest);
   drawPaths(ctx, currentGenFittest);
   document.getElementById('current-generation').innerHTML = population.genNumber;
-  document.getElementById('individuals-screened').innerHTML = population.genNumber * population.popSize.toLocaleString();
+  document.getElementById('individuals-screened').innerHTML = (population.genNumber * population.popSize).toLocaleString();
   let fittestEver = population.fittestEver
   document.getElementById('best-distance').innerHTML = Math.floor(fittestEver.distance)
 
@@ -160,39 +160,39 @@ export const addButtonListeners = (ctx, fittestCtx) => {
 
   const popSizeLabel = document.getElementById('popsize-label');
   const popSizeSlider = document.getElementById('popsize-slider');
-  let popSize = popSizeSlider.value;
-  popSizeLabel.innerHTML = `${popSizeSlider.value}`;
+  let popSize = parseInt(popSizeSlider.value, 10);
+  popSizeLabel.innerHTML = `${popSize}`;
   popSizeSlider.oninput = () => {
-    popSize = popSizeSlider.value
-    popSizeLabel.innerHTML = `${popSize}`
+    popSize = parseInt(popSizeSlider.value, 10);
+    popSizeLabel.innerHTML = `${popSize}`;
     // console.log(popSize);
   };
   const mutationLabel = document.getElementById('mutation-label');
   const mutationSlider = document.getElementById('mutation-slider');
-  let mutProb = mutationSlider.value;
-  mutationLabel.innerHTML = `${mutationSlider.value}`;
+  let mutProb = parseFloat(mutationSlider.value);
+  mutationLabel.innerHTML = `${mutProb}`;
   mutationSlider.oninput = () => {
-    mutProb = mutationSlider.value
+    mutProb = parseFloat(mutationSlider.value);
     mutationLabel.innerHTML = `${mutProb}`
     // console.log(mutProb);
   };
   const crossLabel = document.getElementById('cross-label');
   const crossSlider = document.getElementById('cross-slider');
-  let crossProb = crossSlider.value;
-  crossLabel.innerHTML = `${crossSlider.value}`;
+  let crossProb = parseFloat(crossSlider.value);
+  crossLabel.innerHTML = `${crossProb}`;
   crossSlider.oninput = () => {
-    crossProb = crossSlider.value
-    crossLabel.innerHTML = `${crossProb}`
+    crossProb = parseFloat(crossSlider.value);
+    crossLabel.innerHTML = `${crossProb}`;
     // console.log(crossProb);
   };
   const elitismLabel = document.getElementById('elitism-label');
   const elitismSlider = document.getElementById('elitism-slider');
-  let elitismRate = elitismSlider.value;
-  elitismLabel.innerHTML = `${elitismSlider.value}`;
+  let elitismRate = parseFloat(elitismSlider.value);
+  elitismLabel.innerHTML = `${elitismRate}`;
   elitismSlider.oninput = () => {
-    elitismRate = elitismSlider.value
-    elitismLabel.innerHTML = `${elitismRate}`
-    console.log(elitismRate);
+    elitismRate = parseFloat(elitismSlider.value);
+    elitismLabel.innerHTML = `${elitismRate}`;
+    // console.log(elitismRate);
   };
 
   canvas.addEventListener('click', function (event) {
