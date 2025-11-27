@@ -19,19 +19,32 @@ class Individual {
   }
 
   mutate() {
-    // console.log(JSON.stringify(this.chromosome))
     if (Math.random() < this.mutProb) {
-      let idx1 = Math.floor(Math.random() * this.chromosome.length);
-      let idx2 = Math.floor(Math.random() * this.chromosome.length);
-      while (idx1 === idx2) idx2 = Math.floor(Math.random() * this.chromosome.length);
-      [this.chromosome[idx1], this.chromosome[idx2]] = 
-        [this.chromosome[idx2], this.chromosome[idx1]];
-      // console.log(idx1, idx2)
+      const len = this.chromosome.length;
+
+      // pick two distinct positions
+      let idx1 = Math.floor(Math.random() * len);
+      let idx2 = Math.floor(Math.random() * len);
+      while (idx2 === idx1) {
+        idx2 = Math.floor(Math.random() * len);
+      }
+
+      // ensure idx1 < idx2
+      if (idx1 > idx2) [idx1, idx2] = [idx2, idx1];
+
+      // invert the segment between idx1 and idx2 (inclusive)
+      while (idx1 < idx2) {
+        [this.chromosome[idx1], this.chromosome[idx2]] =
+          [this.chromosome[idx2], this.chromosome[idx1]];
+        idx1++;
+        idx2--;
+      }
     }
-    // console.log(JSON.stringify(this.chromosome))
+
     this.calculateFitness();
-    return this.chromosome
+    return this.chromosome;
   }
+
 
   mate(crossProb, mutProb, otherInd) {
     // console.log('parent 1 chromosome: ', this.chromosome)
