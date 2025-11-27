@@ -52,6 +52,10 @@ class Population {
     // console.log('complete next generation: ', nextGen);
     this.currentGen = nextGen;
     this.genNumber += 1
+
+    // Recalculate total fitness for the new generation
+    this.getTotalFitness();
+
     let currentGenFittest = this.getFittest();
     if (currentGenFittest.fitness > this.fittestEver.fitness) {
       this.fittestEver = currentGenFittest
