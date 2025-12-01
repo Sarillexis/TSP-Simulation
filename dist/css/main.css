@@ -31,34 +31,80 @@ body {
   margin-bottom: 20px;
 }
 
-.route-displays {
+.main-canvas-container {
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 20px;
 }
 
 #canvas {
-  /* border: 1px solid red; */
   background: #fff;
   width: 600px;
   height: 500px
 }
 
-.right-display {
-  margin-left: 30px;
-}
-
-#fittest {
-  background: #fff;
-  width: 300px;
-  height: 250px;
-}
-
 .canvas-label {
   font-size: 20px;
   margin-bottom: 10px;
+  text-align: center;
+}
+
+.controls-stats {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.controls-column,
+.stats-column {
+  flex: 1;
+  min-width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .run-info {
+  display: flex;
+  flex-direction: column;
+  background: rgb(10,28,50);
+  border-radius: 4px;
+  padding: 10px;
+  border: 1px solid #fff;
+  font-size: 16px;
+  line-height: 20px;
+}
+
+.run-metric-label {
+  font-weight: 400;
+}
+
+.instructions {
+  display: flex;
+  flex-direction: column;
+  background: rgb(10,28,50);
+  border-radius: 4px;
+  padding: 10px;
+  border: 1px solid #fff;
+  font-size: 16px;
+  line-height: 20px;
+}
+
+.instructions-label {
+  font-size: 19px;
+  line-height: 28px;
+  font-weight: 400;
+}
+
+.instructions li {
+  margin-bottom: 5px;
+}
+
+.background {
   display: flex;
   flex-direction: column;
   /* align-items: center; */
@@ -70,14 +116,19 @@ body {
   margin: 10px;
   font-size: 16px;
   line-height: 20px;
+  max-width: 1180px;
 }
 
-.run-metric-label {
+.background p {
+  margin: 5px;
+}
+
+.background-title {
+  font-size: 19px;
+  /* line-height: 28px; */
   font-weight: 400;
 }
 
-.below-canvases {
-  display: flex;
-  justify-content: center;
-  margin-top: 15px;
+.background-paragraph {
+  margin-top: 10px;
 }

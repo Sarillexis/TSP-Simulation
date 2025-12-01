@@ -55,8 +55,10 @@ export const stopEvolution = evolveInt => {
 export const evolutionLoop = (ctx, fittestCtx, population) => {
   population.createNextGen();
   let currentGenFittest = population.getFittest();
-  clearCanvas(ctx);
-  clearCanvas(fittestCtx);
+  clearCanvas(canvas);
+  if (fittestCtx) {
+    fittestCtx.clearRect(0, 0, canvas.width, canvas.height)
+  }
   // clearCanvas(fittestCanvas);
   drawPoints(ctx, currentGenFittest);
   drawPaths(ctx, currentGenFittest);
@@ -65,21 +67,23 @@ export const evolutionLoop = (ctx, fittestCtx, population) => {
   let fittestEver = population.fittestEver
   document.getElementById('best-distance').innerHTML = Math.floor(fittestEver.distance)
 
-  const pxSize = 2;
-  const offset = pxSize / 2;
-  fittestEver.chromosome.forEach((gene, ix) => {
-    fittestCtx.fillRect(gene[0]/2 - offset, gene[1]/2 - offset, pxSize, pxSize);
-  });
-  fittestCtx.beginPath();
-  fittestEver.chromosome.forEach((gene, idx) => {
-    if (idx === 0) {
-      fittestCtx.moveTo(gene[0]/2, gene[1]/2);
-    } else {
-      fittestCtx.lineTo(gene[0]/2, gene[1]/2);
-    }
-  });
-  fittestCtx.closePath();
-  fittestCtx.stroke();
+  if (fittestCtx) {
+    const pxSize = 2;
+    const offset = pxSize / 2;
+    fittestEver.chromosome.forEach((gene, ix) => {
+      fittestCtx.fillRect(gene[0]/2 - offset, gene[1]/2 - offset, pxSize, pxSize);
+    });
+    fittestCtx.beginPath();
+    fittestEver.chromosome.forEach((gene, idx) => {
+      if (idx === 0) {
+        fittestCtx.moveTo(gene[0]/2, gene[1]/2);
+      } else {
+        fittestCtx.lineTo(gene[0]/2, gene[1]/2);
+      }
+    });
+    fittestCtx.closePath();
+    fittestCtx.stroke();
+  }
 };
 
 export const addButtonListeners = (ctx, fittestCtx) => {
@@ -128,16 +132,13 @@ export const addButtonListeners = (ctx, fittestCtx) => {
     return newCoords;
   }
 
-  let coordinates = [];
-
-  const updateTotalRoutes = () => {
-    const possibleRoutes = coordinates.length > 1 ? Math.ceil(factorial(coordinates.length - 1) / 2) : 0;
-    totalRoutesDisplay.innerHTML = possibleRoutes ? possibleRoutes.toLocaleString() : '';
-  };
-
-  const renderCoordinates = () => {
-    clearCanvas(canvas);
-    fittestCtx.clearRect(0, 0, canvas.width, canvas.height)
+  const resetPop = () => {
+    clearInterval(evolveInt);
+    population = new Population(popSize, crossProb, mutProb, elitismRate, ...coordinates)
+    clearCanvas(canvas)
+    if (fittestCtx) {
+      fittestCtx.clearRect(0, 0, canvas.width, canvas.height)
+    }
     const pxSize = 5;
     const offset = pxSize / 2;
     coordinates.forEach(point => {
@@ -175,7 +176,10 @@ export const addButtonListeners = (ctx, fittestCtx) => {
     stopEvol()
     coordinates = [];
     population = null;
-    renderCoordinates();
+    clearCanvas(canvas);
+    if (fittestCtx) {
+      fittestCtx.clearRect(0, 0, canvas.width, canvas.height)
+    }
     // console.log('clearing');
     updateTotalRoutes();
     resetRunStats();
