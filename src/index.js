@@ -11,7 +11,14 @@ window.addEventListener('DOMContentLoaded', (event) => {
   let ctx = canvas.getContext('2d');
 
   let fittestCanvas = document.getElementById('fittest');
-  let fittestCtx = fittestCanvas.getContext('2d');
+  let fittestCtx = fittestCanvas ? fittestCanvas.getContext('2d') : null;
+
+  if (!fittestCtx) {
+    fittestCanvas = document.createElement('canvas');
+    fittestCanvas.width = canvas.width;
+    fittestCanvas.height = canvas.height;
+    fittestCtx = fittestCanvas.getContext('2d');
+  }
   // let popSize, crossProb, mutProb;
   // let popSize = 1000;
   // let mutProb = 0.05;
