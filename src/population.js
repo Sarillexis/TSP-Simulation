@@ -1,38 +1,46 @@
 import Individual from './individual';
-import { factorial } from './util';
+import { factorial, shuffleCoordinates, createDistanceCalculator } from './util';
 
 class Population {
   constructor(popSize, crossProb, mutProb, elitismRate, ...coordinates) {
-    this.coordinates = coordinates
+    this.coordinates = coordinates;
     this.popSize = popSize;
     this.crossProb = crossProb;
     this.mutProb = mutProb;
-    this.elitismRate = elitismRate
+    this.elitismRate = elitismRate;
+    this.distanceCalculator = createDistanceCalculator(coordinates);
     this.totalFitness = 0;
     this.currentGen = [];
     this.genNumber = 0;
-    this.numPossibleRoutes = factorial(coordinates.length)
-    // this.getFittest()
-    
-    for (let i = 0; i < popSize; i++) {
-      let chromosome = coordinates.slice().shuffle();
-      let individual = new Individual(mutProb, ...chromosome);
-      this.totalFitness += individual.fitness;
-      this.currentGen.push(individual);
-      // console.log('individual distance: ', individual.distance)
-      // console.log('population total fitness: ', this.totalFitness)
-    }
-    // console.log('CURRENT POPULATION: ', this.currentGen)
-    this.fittestEver = this.getFittest();
+    this.numPossibleRoutes = factorial(coordinates.length);
 
+    for (let i = 0; i < popSize; i += 1) {
+      const chromosome = shuffleCoordinates(coordinates);
+      const individual = new Individual(this.distanceCalculator, mutProb, ...chromosome);
+      this.currentGen.push(individual);
+    }
+
+    this.assignFitness();
+    this.fittestEver = this.getFittest();
   }
-  
+
+  assignFitness() {
+    this.totalFitness = 0;
+    this.currentGen.forEach(individual => {
+      individual.rawFitness = 1 / individual.distance;
+      this.totalFitness += individual.rawFitness;
+    });
+
+    this.currentGen.forEach(individual => {
+      individual.fitness = individual.rawFitness / this.totalFitness;
+    });
+  }
+
   selectParentTournament(k = 3) {
-    // pick the best out of k random individuals
     let best = null;
-    for (let i = 0; i < k; i++) {
+    for (let i = 0; i < k; i += 1) {
       const candidate = this.currentGen[Math.floor(Math.random() * this.currentGen.length)];
-      if (!best || candidate.fitness > best.fitness) {
+      if (!best || candidate.distance < best.distance) {
         best = candidate;
       }
     }
@@ -42,67 +50,41 @@ class Population {
   createNextGen() {
     let nextGen = [];
     if (this.elitismRate) nextGen = nextGen.concat(this.passElites());
-    // console.log('next generation elites: ', nextGen);
+
     while (nextGen.length < this.popSize) {
-      const parent1 = this.selectParentTournament(3); // k = 3 is a good start
+      const parent1 = this.selectParentTournament(3);
       const parent2 = this.selectParentTournament(3);
 
-      const newChildren = parent1.mate(this.crossProb, this.mutProb, parent2);
+      const newChildren = parent1.mate(this.crossProb, parent2);
       nextGen = nextGen.concat(newChildren);
     }
 
-    // console.log('complete next generation: ', nextGen);
-    this.currentGen = nextGen;
-    this.genNumber += 1
+    this.currentGen = nextGen.slice(0, this.popSize);
+    this.genNumber += 1;
 
-    // Recalculate total fitness for the new generation
-    this.getTotalFitness();
+    this.assignFitness();
 
-    let currentGenFittest = this.getFittest();
-    if (currentGenFittest.fitness > this.fittestEver.fitness) {
-      this.fittestEver = currentGenFittest
-    };
+    const currentGenFittest = this.getFittest();
+    if (currentGenFittest.distance < this.fittestEver.distance) {
+      this.fittestEver = currentGenFittest;
+    }
   }
 
   passElites() {
-    let sortedInds = this.currentGen.sort((a, b) => (a.fitness > b.fitness) ? -1 : 1)
-    // console.log(JSON.stringify(sortedInds));
-    let numElites = Math.floor(this.elitismRate * this.popSize);
-    let elites = sortedInds.slice(0, numElites)
-    // console.log(elites)
-    return elites
-  }
-
-  getTotalFitness() {
-    let fitness = 0;
-    this.currentGen.forEach(individual => {
-      fitness += individual.fitness;
-    });
-    this.totalFitness = fitness;
+    const sortedInds = this.currentGen.slice().sort((a, b) => (a.distance < b.distance ? -1 : 1));
+    const numElites = Math.floor(this.elitismRate * this.popSize);
+    return sortedInds.slice(0, numElites);
   }
 
   getFittest() {
     let fittest = this.currentGen[0];
     this.currentGen.forEach(individual => {
-      if (individual.fitness > fittest.fitness) {
+      if (individual.distance < fittest.distance) {
         fittest = individual;
       }
-    })
-    // console.log(`fittest individual's distance: ${fittest.distance}`)
+    });
     return fittest;
   }
 }
-
-// Shuffle via Fisher-Yates algorithm
-Array.prototype.shuffle = function () {
-  let currentIdx = this.length;
-  let randomIdx;
-  while (currentIdx) {
-    randomIdx = Math.floor(Math.random() * currentIdx);
-    currentIdx -= 1;
-    [this[currentIdx], this[randomIdx]] = [this[randomIdx], this[currentIdx]]
-  }
-  return this;
-};
 
 export default Population;

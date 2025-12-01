@@ -1,11 +1,45 @@
-import Population from './population';
-
+const factorialMemo = new Map([[0, 1], [1, 1]]);
 export const factorial = num => {
-  return (num <= 1) ? 1 : num * factorial(num-1)
+  if (factorialMemo.has(num)) return factorialMemo.get(num);
+  let result = 1;
+  for (let i = 2; i <= num; i += 1) {
+    result *= i;
+  }
+  factorialMemo.set(num, result);
+  return result;
 };
 
-export const drawPoints = (ctx, individual) => {
-  const pxSize = 5;
+export const formatRouteCount = coordinates => {
+  if (coordinates.length < 2) return '0';
+  return Math.ceil(factorial(coordinates.length - 1) / 2).toLocaleString();
+};
+
+export const shuffleCoordinates = coordinates => {
+  const shuffled = coordinates.slice();
+  for (let i = shuffled.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+};
+
+export const createDistanceCalculator = coordinates => {
+  const cache = new Map();
+  const key = (a, b) => `${a[0]},${a[1]}-${b[0]},${b[1]}`;
+
+  return (pointA, pointB) => {
+    const forwardKey = key(pointA, pointB);
+    const reverseKey = key(pointB, pointA);
+    if (cache.has(forwardKey)) return cache.get(forwardKey);
+    if (cache.has(reverseKey)) return cache.get(reverseKey);
+
+    const distance = Math.hypot(pointA[0] - pointB[0], pointA[1] - pointB[1]);
+    cache.set(forwardKey, distance);
+    return distance;
+  };
+};
+
+export const drawPoints = (ctx, individual, pxSize = 5) => {
   const offset = pxSize / 2;
   individual.chromosome.forEach(gene => {
     ctx.fillRect(gene[0] - offset, gene[1] - offset, pxSize, pxSize);
@@ -26,9 +60,10 @@ export const drawPaths = (ctx, individual) => {
   ctx.stroke();
 };
 
-const formatRouteCount = coordinates => {
-  if (coordinates.length < 2) return '0';
-  return Math.ceil(factorial(coordinates.length - 1) / 2).toLocaleString();
+export const drawIndividual = (ctx, individual) => {
+  clearCanvas(ctx);
+  drawPoints(ctx, individual);
+  drawPaths(ctx, individual);
 };
 
 export const clearCanvas = canvasOrContext => {
@@ -37,220 +72,51 @@ export const clearCanvas = canvasOrContext => {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 };
 
-export const startEvolution = (ctx, population) => {
-  const evolveInt = setInterval(() => {
-    population.createNextGen();
-    let fittest = population.getFittest();
-    clearCanvas(ctx);
-    drawPoints(ctx, fittest);
-    drawPaths(ctx, fittest);
-  }, 1000);
-  return evolveInt;
-}
-
-export const stopEvolution = evolveInt => {
-  clearInterval(evolveInt);
-}
-
-export const evolutionLoop = (ctx, fittestCtx, population) => {
-  population.createNextGen();
-  let currentGenFittest = population.getFittest();
-  clearCanvas(canvas);
-  if (fittestCtx) {
-    fittestCtx.clearRect(0, 0, canvas.width, canvas.height)
+export const renderRunStats = (population, { generationEl, screenedEl, bestDistanceEl, startingDistanceEl }) => {
+  generationEl.textContent = population.genNumber;
+  screenedEl.textContent = (population.genNumber * population.popSize).toLocaleString();
+  const fittestEver = population.fittestEver;
+  if (startingDistanceEl && population.genNumber === 0) {
+    startingDistanceEl.textContent = Math.floor(population.getFittest().distance);
   }
-  // clearCanvas(fittestCanvas);
-  drawPoints(ctx, currentGenFittest);
-  drawPaths(ctx, currentGenFittest);
-  document.getElementById('current-generation').innerHTML = population.genNumber;
-  document.getElementById('individuals-screened').innerHTML = (population.genNumber * population.popSize).toLocaleString();
-  let fittestEver = population.fittestEver
-  document.getElementById('best-distance').innerHTML = Math.floor(fittestEver.distance)
-
-  if (fittestCtx) {
-    const pxSize = 2;
-    const offset = pxSize / 2;
-    fittestEver.chromosome.forEach((gene, ix) => {
-      fittestCtx.fillRect(gene[0]/2 - offset, gene[1]/2 - offset, pxSize, pxSize);
-    });
-    fittestCtx.beginPath();
-    fittestEver.chromosome.forEach((gene, idx) => {
-      if (idx === 0) {
-        fittestCtx.moveTo(gene[0]/2, gene[1]/2);
-      } else {
-        fittestCtx.lineTo(gene[0]/2, gene[1]/2);
-      }
-    });
-    fittestCtx.closePath();
-    fittestCtx.stroke();
-  }
+  bestDistanceEl.textContent = Math.floor(fittestEver.distance);
 };
 
-export const addButtonListeners = (ctx, fittestCtx) => {
-  const canvas = ctx.canvas;
-  const startBtn = document.getElementById('start');
-  const stopBtn  = document.getElementById('stop');
-  const resetBtn = document.getElementById('reset');
-  const clearBtn = document.getElementById('clear');
-  const randomPointsLabel = document.getElementById('random-points-label');
-  const randomPointsSlider = document.getElementById('random-points-slider');
-  const generateRandomBtn = document.getElementById('generate-random');
-  let evolveInt = null;
-  let population;
-
-  let totalRoutesDisplay = document.getElementById('total-possible-routes')
-  const currentGenerationDisplay = document.getElementById('current-generation');
-  const individualsScreenedDisplay = document.getElementById('individuals-screened');
-  const startingDistanceDisplay = document.getElementById('starting-distance');
-  const bestDistanceDisplay = document.getElementById('best-distance');
-
-  const stopEvol = () => {
-    if (evolveInt) {
-      clearInterval(evolveInt);
-      evolveInt = null;
-    }
+export const renderFittestPreview = (fittestCtx, individual) => {
+  if (!fittestCtx || !individual) {
+    if (fittestCtx) clearCanvas(fittestCtx);
+    return;
   }
 
-  const resetRunStats = () => {
-    currentGenerationDisplay.innerHTML = 0;
-    individualsScreenedDisplay.innerHTML = 0;
-  };
-
-  const clearDistanceDisplays = () => {
-    startingDistanceDisplay.innerHTML = '';
-    bestDistanceDisplay.innerHTML = '';
-  };
-
-  const generateRandomCoords = num => {
-    let newCoords = [];
-    for (let i = 0; i < num; i++) {
-      newCoords.push([
-        Math.random() * canvas.width,
-        Math.random() * canvas.height
-      ])
-    }
-    return newCoords;
-  }
-
-  const resetPop = () => {
-    clearInterval(evolveInt);
-    population = new Population(popSize, crossProb, mutProb, elitismRate, ...coordinates)
-    clearCanvas(canvas)
-    if (fittestCtx) {
-      fittestCtx.clearRect(0, 0, canvas.width, canvas.height)
-    }
-    const pxSize = 5;
-    const offset = pxSize / 2;
-    coordinates.forEach(point => {
-      ctx.fillRect(point[0] - offset, point[1] - offset, pxSize, pxSize);
-    });
-  }
-
-  const applyNewCoordinates = newCoords => {
-    stopEvol();
-    coordinates = newCoords;
-    population = null;
-    renderCoordinates();
-    updateTotalRoutes();
-    resetRunStats();
-    clearDistanceDisplays();
-  };
-
-  applyNewCoordinates(generateRandomCoords(15));
-
-  const beginEvol = () => {
-    population = population ? population : new Population(popSize, crossProb, mutProb, elitismRate, ...coordinates)
-    evolveInt = setInterval(() => evolutionLoop(ctx, fittestCtx, population), 100);
-    startingDistanceDisplay.innerHTML = Math.floor(population.getFittest().distance);
-    bestDistanceDisplay.innerHTML = Math.floor(population.fittestEver.distance)
-  }
-
-  const resetPop = () => {
-    stopEvol();
-    population = new Population(popSize, crossProb, mutProb, elitismRate, ...coordinates)
-    renderCoordinates();
-    resetRunStats();
-  }
-
-  const clearPop = () => {
-    stopEvol()
-    coordinates = [];
-    population = null;
-    clearCanvas(canvas);
-    if (fittestCtx) {
-      fittestCtx.clearRect(0, 0, canvas.width, canvas.height)
-    }
-    // console.log('clearing');
-    updateTotalRoutes();
-    resetRunStats();
-    clearDistanceDisplays();
-  }
-
-  const popSizeLabel = document.getElementById('popsize-label');
-  const popSizeSlider = document.getElementById('popsize-slider');
-  let popSize = parseInt(popSizeSlider.value, 10);
-  popSizeLabel.innerHTML = `${popSize}`;
-  popSizeSlider.oninput = () => {
-    popSize = parseInt(popSizeSlider.value, 10);
-    popSizeLabel.innerHTML = `${popSize}`;
-    // console.log(popSize);
-  };
-  const mutationLabel = document.getElementById('mutation-label');
-  const mutationSlider = document.getElementById('mutation-slider');
-  let mutProb = parseFloat(mutationSlider.value);
-  mutationLabel.innerHTML = `${mutProb}`;
-  mutationSlider.oninput = () => {
-    mutProb = parseFloat(mutationSlider.value);
-    mutationLabel.innerHTML = `${mutProb}`
-    // console.log(mutProb);
-  };
-  const crossLabel = document.getElementById('cross-label');
-  const crossSlider = document.getElementById('cross-slider');
-  let crossProb = parseFloat(crossSlider.value);
-  crossLabel.innerHTML = `${crossProb}`;
-  crossSlider.oninput = () => {
-    crossProb = parseFloat(crossSlider.value);
-    crossLabel.innerHTML = `${crossProb}`;
-    // console.log(crossProb);
-  };
-  const elitismLabel = document.getElementById('elitism-label');
-  const elitismSlider = document.getElementById('elitism-slider');
-  let elitismRate = parseFloat(elitismSlider.value);
-  elitismLabel.innerHTML = `${elitismRate}`;
-  elitismSlider.oninput = () => {
-    elitismRate = parseFloat(elitismSlider.value);
-    elitismLabel.innerHTML = `${elitismRate}`;
-    // console.log(elitismRate);
-  };
-
-  let randomPoints = parseInt(randomPointsSlider.value, 10);
-  randomPointsLabel.innerHTML = `${randomPoints}`;
-  randomPointsSlider.oninput = () => {
-    randomPoints = parseInt(randomPointsSlider.value, 10);
-    randomPointsLabel.innerHTML = `${randomPoints}`;
-  };
-
-  generateRandomBtn.addEventListener('click', () => {
-    applyNewCoordinates(generateRandomCoords(randomPoints));
+  clearCanvas(fittestCtx);
+  const pxSize = 2;
+  const offset = pxSize / 2;
+  individual.chromosome.forEach(gene => {
+    fittestCtx.fillRect(gene[0] / 2 - offset, gene[1] / 2 - offset, pxSize, pxSize);
   });
+  fittestCtx.beginPath();
+  individual.chromosome.forEach((gene, idx) => {
+    if (idx === 0) {
+      fittestCtx.moveTo(gene[0] / 2, gene[1] / 2);
+    } else {
+      fittestCtx.lineTo(gene[0] / 2, gene[1] / 2);
+    }
+  });
+  fittestCtx.closePath();
+  fittestCtx.stroke();
+};
 
-  canvas.addEventListener('click', function (event) {
-    var rect = canvas.getBoundingClientRect();
-    var x = event.clientX - rect.left;
-    var y = event.clientY - rect.top;
-    // console.log("x: " + x + " y: " + y);
-    coordinates.push([x, y])
-    // console.log('coordinates: ', coordinates)
-    const pxSize = 5;
-    const offset = pxSize / 2;
-    ctx.fillRect(x - offset, y - offset, pxSize, pxSize);
-    updateTotalRoutes();
-  }, false);
+export const renderTotalRoutes = (coordinates, targetEl) => {
+  targetEl.textContent = formatRouteCount(coordinates);
+};
 
-  // console.log(`popsize: ${popSize}, mutprob: ${mutProb}, crossprob: ${crossProb}`)
-
-  startBtn.addEventListener('click', beginEvol);
-  stopBtn.addEventListener('click', stopEvol);
-  resetBtn.addEventListener('click', resetPop);
-  clearBtn.addEventListener('click', clearPop);
-}
+export const generateRandomCoords = (num, canvas) => {
+  const newCoords = [];
+  for (let i = 0; i < num; i += 1) {
+    newCoords.push([
+      Math.random() * canvas.width,
+      Math.random() * canvas.height
+    ]);
+  }
+  return newCoords;
+};
